@@ -86,7 +86,7 @@ def _safe_eval(node):
     """Recursively evaluates an AST node containing mathematical expressions."""
     if isinstance(node, ast.Constant):  # Python 3.8+ numbers/constants
         if isinstance(node.value, (int, float)):
-            return node.value
+            return node.value#
         raise ValueError(f"Unsupported constant type: {type(node.value)}")
     elif isinstance(node, ast.Name):
         if node.id in SAFE_CONSTANTS:
