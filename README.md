@@ -181,3 +181,33 @@ Query: "What is the current system time?"
 Tool: get_system_time()
 Result: "Local Time: Friday, August 21, 2026 - 10:45:00 AM | UTC Time: 2026-08-21 05:15:00 UTC"
 ```
+
+---
+
+## ☁️ Deployment to Streamlit Community Cloud (Free Tier)
+
+### Step 1: Push Code to GitHub
+1. Create a repository on GitHub (public or private).
+2. Push your project files:
+   ```bash
+   git init
+   git add .
+   git commit -m "Initial commit for Streamlit Cloud deployment"
+   git branch -M main
+   git remote add origin https://github.com/YOUR_USERNAME/YOUR_REPO_NAME.git
+   git push -u origin main
+   ```
+
+### Step 2: Deploy on Streamlit Cloud
+1. Sign in to [share.streamlit.io](https://share.streamlit.io/) with your GitHub account.
+2. Click **"New app"**.
+3. Select your GitHub repository, branch (`main`), and set **Main file path** to `app.py`.
+
+### Step 3: Configure Environment Secrets
+1. In the app settings on Streamlit Cloud, open **Advanced settings...** -> **Secrets**.
+2. Add your Groq API key:
+   ```toml
+   GROQ_API_KEY = "gsk_your_actual_groq_api_key_here"
+   GROQ_MODEL = "qwen/qwen3.6-27b"
+   ```
+3. Click **Save** and deploy! Your app will be live with a free `https://<your-app>.streamlit.app` URL.

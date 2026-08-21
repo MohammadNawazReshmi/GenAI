@@ -349,6 +349,12 @@ with st.sidebar:
     st.markdown("---")
     # Key Status Check
     env_key = os.getenv("GROQ_API_KEY", "")
+    if not env_key and hasattr(st, "secrets"):
+        try:
+            if "GROQ_API_KEY" in st.secrets:
+                env_key = st.secrets["GROQ_API_KEY"]
+        except Exception:
+            pass
     key_input = st.text_input("Groq API Key (Optional Override)", type="password", value="")
     effective_key = key_input.strip() if key_input.strip() else env_key
 
