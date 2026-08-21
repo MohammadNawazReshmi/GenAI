@@ -1,22 +1,29 @@
-# Python AI Chatbot (ReAct Agent with LangGraph & Groq)
+# Grok AI Chatbot & ReAct Agent
 
-A high-performance, multi-turn AI assistant built with **LangGraph**, **LangChain Core**, and **Groq Cloud API**. It employs the **ReAct (Reasoning + Acting)** framework with stateful thread memory (`MemorySaver`), safe mathematical evaluation, and a rich, interactive CLI experience.
+A high-performance, multi-turn AI assistant ecosystem powered by **LangGraph**, **LangChain Core**, **Groq Cloud API**, and **Streamlit**. It features both a sleek **Grok 3 / xAI-inspired Web UI** (`app.py`) and an interactive **Terminal CLI** (`min.py`).
 
 ---
 
 ## 📌 Features
 
-- ⚡ **Ultra-Fast LLM Inference**: Powered by Groq Cloud (e.g., `qwen/qwen3.6-27b`, `llama-3.3-70b-versatile`).
-- 🧠 **Multi-Turn Conversational Memory**: Uses LangGraph's `MemorySaver` checkpointer with thread sessions to preserve full conversational history across turns.
+- ⚡ **Ultra-Fast LLM Inference**: Powered by Groq Cloud (e.g., `qwen/qwen3.6-27b`, `groq/compound`, `groq/compound-mini`, `openai/gpt-oss-120b`, `openai/gpt-oss-20b`, or custom model identifiers).
+- 𝕏 **Grok-Inspired Web UI (`app.py`)**:
+  - Obsidian dark design system with glassmorphism and elevated card styling (`#09090b` / `#141417`).
+  - Interactive **Tool Execution Visualizer** showing live tool call inputs and structured outputs.
+  - Dynamic model selector, custom model string input, and creativity temperature slider (`0.0` - `1.0`).
+  - Toggleable tool ecosystem (selectively enable/disable individual tools).
+  - Multi-session chat history manager (create, switch between, and persist conversation threads).
+  - Quick-start interactive prompt cards for math formulas, time checks, and greetings.
+  - Live API key configuration and status indicator.
+  - Customizable system prompt persona editor.
+- 🧠 **Multi-Turn Conversational Memory**: LangGraph `MemorySaver` checkpointer preserves thread state across multi-turn queries.
 - 🛠️ **Integrated Tool Ecosystem**:
-  - `calculator`: Safe AST-based mathematical expression evaluator (supporting arithmetic, roots, trigonometry, logs, constants like $\pi$ and $e$, without unsafe `eval`).
-  - `say_hello`: Adaptive greeting tool with custom tones (*friendly*, *formal*, *energetic*, *casual*).
+  - `calculator`: Safe AST-based mathematical expression evaluator (supporting arithmetic, roots, trigonometry, logarithms, constants like $\pi$ and $e$, with zero `eval` vulnerability).
+  - `say_hello`: Adaptive greeting tool supporting customizable tones (*friendly*, *formal*, *energetic*, *casual*).
   - `get_system_time`: Real-time local and UTC timestamp provider.
-- 🎨 **Rich Terminal UX**:
-  - ANSI-styled interface with glowing prompts and banners.
-  - Real-time tool execution tracking (`⚡ Calling Tool` & `⚙️ Tool Output`).
-  - Interactive commands: `help`, `clear`, `reset`, `model`, `quit`.
-- 🛡️ **Robust Error Handling**: Graceful recovery from API connection hiccups, rate limits, and `Ctrl+C` termination.
+- 💻 **Rich Terminal CLI (`min.py`)**:
+  - ANSI-styled interface with color-coded prompts and tool execution badges.
+  - Direct interactive commands: `help`, `clear`, `reset`, `model`, `quit`.
 
 ---
 
@@ -24,23 +31,31 @@ A high-performance, multi-turn AI assistant built with **LangGraph**, **LangChai
 
 ```mermaid
 flowchart TD
-    User([User in CLI]) -->|Prompt| Session[Thread State / MemorySaver]
-    Session -->|History + New Prompt| Agent[LangGraph ReAct Agent]
-    Agent -->|Evaluate| LLM[Groq LLM / ChatGroq]
-    
-    LLM -->|Decision| Decision{Tool Call Required?}
-    
-    Decision -->|Yes| ToolRouter[Tool Registry]
-    ToolRouter -->|Safe AST Eval| CalcTool["calculator(expression)"]
-    ToolRouter -->|Dynamic Greeting| HelloTool["say_hello(name, tone)"]
-    ToolRouter -->|Timestamp Lookup| TimeTool["get_system_time()"]
-    
-    CalcTool -->|Tool Output| LLM
-    HelloTool -->|Tool Output| LLM
-    TimeTool -->|Tool Output| LLM
-    
-    Decision -->|No / Final Output| Streamer[Terminal Streamer & Badges]
-    Streamer -->|Real-time response| User
+    subgraph Interfaces
+        UI[Grok Streamlit Web UI app.py]
+        CLI[Terminal CLI Interface min.py]
+    end
+
+    UI -->|Session Thread ID & User Input| Agent[LangGraph ReAct Agent]
+    CLI -->|Session Thread ID & User Input| Agent
+
+    Agent -->|MemorySaver Thread Checkpoint| State[Conversation Memory]
+    Agent -->|Prompt + Context| LLM[Groq Cloud LLM]
+
+    LLM -->|Decision| Decision{Tool Required?}
+
+    Decision -->|Yes| Tools[Tool Registry]
+    Tools -->|AST Evaluator| CalcTool["calculator(expression)"]
+    Tools -->|Dynamic Tone| HelloTool["say_hello(name, tone)"]
+    Tools -->|Timestamp Provider| TimeTool["get_system_time()"]
+
+    CalcTool -->|Result| LLM
+    HelloTool -->|Result| LLM
+    TimeTool -->|Result| LLM
+
+    Decision -->|No / Final Response| OutputStream[Streamer & UI Component]
+    OutputStream -->|Render Response & Tool Badges| UI
+    OutputStream -->|Terminal Output| CLI
 ```
 
 ---
@@ -51,9 +66,10 @@ flowchart TD
 projectt/
 ├── .env                # Environment variables (API keys, model configs)
 ├── .env.example        # Template for required environment variables
-├── .gitignore          # Git ignore rules for Python, virtual environments, .env
-├── min.py              # Main application entry point, agent definition & tools
-├── reqirements.txt     # Python project dependencies
+├── .gitignore          # Git ignore rules
+├── app.py              # Grok-inspired Streamlit Web Application
+├── min.py              # Main agent definition, tools, and CLI application
+├── requirements.txt    # Python project dependencies
 └── README.md           # Project documentation & usage guide
 ```
 
@@ -63,85 +79,105 @@ projectt/
 
 ### 1. Prerequisites
 - **Python 3.10+** installed.
-- A **Groq API Key** (Get one free at [console.groq.com](https://console.groq.com/keys)).
+- A **Groq API Key** (Get a free key at [console.groq.com](https://console.groq.com/keys)).
 
-### 2. Set Up Virtual Environment
+### 2. Virtual Environment Setup
 
+Activate the `.venv` virtual environment:
+
+#### Windows (PowerShell):
+```powershell
+.\.venv\Scripts\Activate.ps1
+```
+
+#### Windows (CMD):
+```cmd
+.\.venv\Scripts\activate.bat
+```
+
+#### macOS / Linux:
 ```bash
-# Create a virtual environment
-python -m venv .venv
-
-# Activate the virtual environment
-# On Windows (PowerShell):
-.venv\Scripts\Activate.ps1
-# On Windows (CMD):
-.venv\Scripts\activate.bat
-# On macOS / Linux:
 source .venv/bin/activate
 ```
 
 ### 3. Install Dependencies
 
+All dependencies are defined in `requirements.txt`:
+
 ```bash
-pip install -r reqirements.txt
+pip install -r requirements.txt
 ```
 
 ### 4. Configure Environment Variables
 
-Create or edit `.env`:
+Create or configure `.env` in the root directory:
 
 ```env
 GROQ_API_KEY=gsk_your_groq_api_key_here
 GROQ_MODEL=qwen/qwen3.6-27b
 ```
 
-### 5. Run the Application
+---
 
-```bash
+## 🖥️ Running the Applications
+
+### Option A: Grok Streamlit Web UI (Recommended)
+
+To launch the web application:
+
+```powershell
+python -m streamlit run app.py
+```
+
+Or using virtual environment directly:
+
+```powershell
+.\.venv\Scripts\streamlit.exe run app.py
+```
+
+Open your browser at **`http://localhost:8501`**.
+
+---
+
+### Option B: Terminal CLI Interface
+
+To start the interactive command-line interface:
+
+```powershell
 python min.py
 ```
 
----
-
-## ⌨️ CLI Commands
-
-While chatting, you can enter any of the following commands:
+#### CLI Quick Commands:
 
 | Command | Action |
 |---|---|
-| `help` | Display command help and tool overview |
-| `clear` / `cls` | Clear the terminal screen and display the banner |
-| `reset` / `new` | Reset conversation memory and start a fresh session thread |
+| `help` | Display command guidance and tool info |
+| `clear` / `cls` | Clear terminal console screen |
+| `reset` / `new` | Reset memory and start a new conversation session |
 | `model` | Inspect active model name, API key status, and session ID |
-| `quit` / `exit` / `q` | Cleanly exit the chatbot |
+| `quit` / `exit` / `q` | Exit the CLI application |
 
 ---
 
-## 💬 Usage Examples
+## 💬 Usage & Tool Examples
 
-### 1. Advanced Safe Math
+### 1. Mathematical Calculations
 ```text
-You > What is sqrt(144) + 15 * 4 - 2^3?
-⚡ Calling Tool: calculator(expression='sqrt(144) + 15 * 4 - 2**3')
-⚙️  [calculator]: Calculation Result: sqrt(144) + 15 * 4 - 2**3 = 64.0
-Assistant > The result of the calculation is **64.0**.
+Query: "Calculate sqrt(144) + 10^2 * sin(pi/4)"
+Tool: calculator(expression='sqrt(144) + 10**2 * sin(pi/4)')
+Result: 82.71067811865476
 ```
 
-### 2. Multi-turn Memory
+### 2. Personalized Tone Greetings
 ```text
-You > My favorite color is electric indigo.
-Assistant > That is a vibrant and striking color! I've noted that your favorite color is electric indigo.
-
-You > What is my favorite color again?
-Assistant > Your favorite color is electric indigo!
+Query: "Greet Alex in an energetic tone"
+Tool: say_hello(name='Alex', tone='energetic')
+Result: "Hey Alex! Super excited to collaborate with you! Let's get things done!"
 ```
 
-### 3. Dynamic Greetings & System Timestamps
+### 3. System Time Lookup
 ```text
-You > Greet Sophia in an energetic tone and tell me what time it is.
-⚡ Calling Tool: say_hello(name='Sophia', tone='energetic')
-⚡ Calling Tool: get_system_time()
-⚙️  [say_hello]: Hey Sophia! Super excited to collaborate with you! Let's get things done!
-⚙️  [get_system_time]: Local Time: Thursday, August 20, 2026 - 10:42:00 AM | UTC Time: 2026-08-20 05:12:00 UTC
-Assistant > Hey Sophia! Super excited to collaborate with you! Let's get things done! The current time is Thursday, August 20, 2026 at 10:42 AM.
+Query: "What is the current system time?"
+Tool: get_system_time()
+Result: "Local Time: Friday, August 21, 2026 - 10:45:00 AM | UTC Time: 2026-08-21 05:15:00 UTC"
 ```
